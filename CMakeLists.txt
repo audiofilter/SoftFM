@@ -3,9 +3,11 @@
 cmake_minimum_required(VERSION 2.4)
 project(SoftFM)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
+
 find_package(Threads)
 find_package(PkgConfig)
-#find_package(rtaudio)
+find_package(RtAudio REQUIRED)
 #find_package(ALSA REQUIRED)
 
 IF(APPLE)
@@ -39,8 +41,8 @@ else()
     message("        -DRTLSDR_LIBRARY=/path/rtlsdr/lib/librtlsdr.a")
 endif()
 
-set(RTLSDR_INCLUDE_DIRS ${RTLSDR_INCLUDE_DIR} ${LIBUSB_INCLUDE_DIR} "/usr/local/Cellar/rt-audio/4.1.1/include")
-set(RTLSDR_LIBRARIES    ${RTLSDR_LIBRARY} ${LIBUSB_LIBRARY} "/usr/local/Cellar/rt-audio/4.1.1/lib/librtaudio_static.a" ${EXTRA_LIBS})
+set(RTLSDR_INCLUDE_DIRS ${RTLSDR_INCLUDE_DIR} ${LIBUSB_INCLUDE_DIR} ${RtAudio_INCLUDE_DIR})
+set(RTLSDR_LIBRARIES    ${RTLSDR_LIBRARY} ${LIBUSB_LIBRARY} ${RtAudio_LIBRARY} ${EXTRA_LIBS})
 
 # Compiler flags.
 set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -O2 -ffast-math -ftree-vectorize ${EXTRA_FLAGS}")
