@@ -179,6 +179,12 @@ public:
         return m_baseband_level;
     }
 
+	  static double get_default_bandwidth_pcm()
+	  {
+			return default_bandwidth_pcm;
+		}
+	
+
     /** Return amplitude of stereo pilot (nominal level is 0.1). */
     double get_pilot_level() const
     {

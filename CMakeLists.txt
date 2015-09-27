@@ -5,7 +5,15 @@ project(SoftFM)
 
 find_package(Threads)
 find_package(PkgConfig)
-find_package(ALSA REQUIRED)
+#find_package(rtaudio)
+#find_package(ALSA REQUIRED)
+
+IF(APPLE)
+   FIND_LIBRARY(CoreFoundation_LIBRARY CoreFoundation)
+   FIND_LIBRARY(CoreAudio_LIBRARY CoreAudio)
+   MARK_AS_ADVANCED (CoreFoundation_LIBRARY CoreAudio_LIBRARY)
+   SET(EXTRA_LIBS ${CoreFoundation_LIBRARY} ${CoreAudio_LIBRARY})
+ENDIF (APPLE)
 
 # Find RTL-SDR library (for linking).
 pkg_check_modules(PKG_RTLSDR librtlsdr)
@@ -31,8 +39,8 @@ else()
     message("        -DRTLSDR_LIBRARY=/path/rtlsdr/lib/librtlsdr.a")
 endif()
 
-set(RTLSDR_INCLUDE_DIRS ${RTLSDR_INCLUDE_DIR} ${LIBUSB_INCLUDE_DIR})
-set(RTLSDR_LIBRARIES    ${RTLSDR_LIBRARY} ${LIBUSB_LIBRARY})
+set(RTLSDR_INCLUDE_DIRS ${RTLSDR_INCLUDE_DIR} ${LIBUSB_INCLUDE_DIR} "/usr/local/Cellar/rt-audio/4.1.1/include")
+set(RTLSDR_LIBRARIES    ${RTLSDR_LIBRARY} ${LIBUSB_LIBRARY} "/usr/local/Cellar/rt-audio/4.1.1/lib/librtaudio_static.a" ${EXTRA_LIBS})
 
 # Compiler flags.
 set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -O2 -ffast-math -ftree-vectorize ${EXTRA_FLAGS}")

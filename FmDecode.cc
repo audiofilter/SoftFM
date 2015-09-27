@@ -6,7 +6,7 @@
 
 using namespace std;
 
-
+#ifdef USE_FAST_ATAN
 /** Fast approximation of atan function. */
 static inline Sample fast_atan(Sample x)
 {
@@ -31,7 +31,7 @@ static inline Sample fast_atan(Sample x)
 
     return (y + p) * Sample(M_PI_2);
 }
-
+#endif
 
 /** Compute RMS level over a small prefix of the specified sample vector. */
 static IQSample::value_type rms_level_approx(const IQSampleVector& samples)

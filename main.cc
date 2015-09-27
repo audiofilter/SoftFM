@@ -497,8 +497,7 @@ int main(int argc, char **argv)
     fprintf(stderr, "baseband downsampling factor %u\n", downsample);
 
     // Prevent aliasing at very low output sample rates.
-    double bandwidth_pcm = min(FmDecoder::default_bandwidth_pcm,
-                               0.45 * pcmrate);
+    double bandwidth_pcm = min(FmDecoder::get_default_bandwidth_pcm(),  0.45 * pcmrate);
     fprintf(stderr, "audio sample rate: %u Hz\n", pcmrate);
     fprintf(stderr, "audio bandwidth:   %.3f kHz\n", bandwidth_pcm * 1.0e-3);
 
@@ -561,9 +560,8 @@ int main(int argc, char **argv)
             audio_output.reset(new WavAudioOutput(filename, pcmrate, stereo));
             break;
         case MODE_ALSA:
-            fprintf(stderr, "playing audio to ALSA device '%s'\n",
-                    alsadev.c_str());
-            audio_output.reset(new AlsaAudioOutput(alsadev, pcmrate, stereo));
+            fprintf(stderr, "playing audio to device '%s'\n",  alsadev.c_str());
+            audio_output.reset(new StreamAudioOutput(alsadev, pcmrate, stereo));
             break;
     }
 

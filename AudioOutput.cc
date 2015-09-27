@@ -28,14 +28,78 @@
 #include <cstring>
 #include <cerrno>
 #include <algorithm>
+#include <cassert>
 
+#ifdef __APPLE__
+#include <RtAudio.h>
+#else
 #include <alsa/asoundlib.h>
+#endif
 
 #include "SoftFM.h"
 #include "AudioOutput.h"
 
 using namespace std;
 
+#ifdef __APPLE__
+void errorCallback( RtAudioError::Type type, const std::string &errorText )
+{
+  // This example error handling function does exactly the same thing
+  // as the embedded RtAudio::error() function.
+  std::cout << "in errorCallback" << std::endl;
+  if ( type == RtAudioError::WARNING )
+    std::cerr << '\n' << errorText << "\n\n";
+  else if ( type != RtAudioError::WARNING )
+    throw( RtAudioError( errorText, type ) );
+}
+
+typedef signed short MY_TYPE;
+unsigned channels=2;
+
+#ifdef __APPLE__
+static int16_t *non_m_pcm;
+unsigned bufferFrames = 512;
+const int NUM_BUFFERS = 32*4;
+const int WRAP_SIZE = NUM_BUFFERS * bufferFrames * 2;
+static long write_count = 0;
+static long read_count = 0;
+static int begin_read = 0;
+#endif
+
+int saw( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
+         double /*streamTime*/, RtAudioStreamStatus status, void *data )
+{
+  unsigned int i, j;
+  extern unsigned int channels;
+  MY_TYPE *buffer = (MY_TYPE *) outputBuffer;
+  int16_t *Vals = (int16_t *) data;
+
+  if ( status )
+    std::cout << "Stream underflow detected!" << std::endl;
+
+	if (write_count > 2*channels*bufferFrames) begin_read = 1;
+
+	//std::cout << "in saw " << channels << " channels + " << nBufferFrames << " frames \n";
+	
+	for ( j=0; j<channels; j++ ) {
+		for ( i=0; i<nBufferFrames; i++ ) {
+			if (begin_read) {
+				//if (read_count < 8) std::cout << (MY_TYPE)Vals[read_count] << " ";
+				//else if (read_count == 8) std::cout << "\n";
+				*buffer++ = (MY_TYPE)Vals[read_count];
+				read_count ++;
+				if (read_count >= WRAP_SIZE) read_count = 0;
+			} else {
+				*buffer++ = 0;
+			}
+		}
+	}
+
+  return 0;
+}
+
+
+#endif
 
 /* ****************  class AudioOutput  **************** */
 
@@ -263,16 +327,17 @@ void WavAudioOutput::set_value(uint8_t * ptr, T value)
 }
 
 
-/* ****************  class AlsaAudioOutput  **************** */
+/* ****************  class StreamAudioOutput  **************** */
 
-// Construct ALSA output stream.
-AlsaAudioOutput::AlsaAudioOutput(const std::string& devname,
-                                 unsigned int samplerate,
-                                 bool stereo)
+// Construct output stream.
+StreamAudioOutput::StreamAudioOutput(const std::string& devname,
+																		 unsigned int samplerate,
+																		 bool stereo)
 {
-    m_pcm = NULL;
     m_nchannels = stereo ? 2 : 1;
 
+#ifndef __APPLE__		
+    m_pcm = NULL;
     int r = snd_pcm_open(&m_pcm, devname.c_str(),
                          SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
 
@@ -299,25 +364,49 @@ AlsaAudioOutput::AlsaAudioOutput(const std::string& devname,
         m_error += ")";
         m_zombie = true;
     }
+#else
+		m_rt_params.deviceId = 0;
+		m_rt_params.nChannels = m_nchannels;
+		m_rt_params.firstChannel = 0;
+    m_rt_params.deviceId = dac.getDefaultOutputDevice();
+
+		RtAudio::StreamOptions options;
+		options.flags = RTAUDIO_HOG_DEVICE;
+		options.flags |= RTAUDIO_SCHEDULE_REALTIME;
+
+		std::cout << "m_pcm size = " << m_nchannels * bufferFrames << "\n";
+		non_m_pcm = (int16_t *) calloc( WRAP_SIZE, sizeof( int16_t ) );
+		
+		try {
+			dac.openStream( &m_rt_params, NULL, RTAUDIO_SINT16, 48000, &bufferFrames, &saw, (void *)non_m_pcm, &options, &errorCallback );
+			dac.startStream();
+		}
+		catch ( RtAudioError& e ) {
+			e.printMessage();
+		}
+#endif
 }
 
 
 // Destructor.
-AlsaAudioOutput::~AlsaAudioOutput()
+StreamAudioOutput::~StreamAudioOutput()
 {
     // Close device.
+#ifndef __APPLE__
     if (m_pcm != NULL) {
-        snd_pcm_close(m_pcm);
+			snd_pcm_close(m_pcm);
     }
+#endif
 }
 
 
 // Write audio data.
-bool AlsaAudioOutput::write(const SampleVector& samples)
+bool StreamAudioOutput::write(const SampleVector& samples)
 {
     if (m_zombie)
         return false;
 
+#ifndef __APPLE__			
     // Convert samples to bytes.
     samplesToInt16(samples, m_bytebuf);
 
@@ -325,10 +414,9 @@ bool AlsaAudioOutput::write(const SampleVector& samples)
     unsigned int p = 0;
     unsigned int n = samples.size() / m_nchannels;
     unsigned int framesize = 2 * m_nchannels;
-    while (p < n) {
 
-        int k = snd_pcm_writei(m_pcm,
-                               m_bytebuf.data() + p * framesize, n - p);
+    while (p < n) {
+        int k = snd_pcm_writei(m_pcm,  m_bytebuf.data() + p * framesize, n - p);
         if (k < 0) {
             m_error = "write failed (";
             m_error += strerror(errno);
@@ -341,6 +429,14 @@ bool AlsaAudioOutput::write(const SampleVector& samples)
             p += k;
         }
     }
+#else
+		//std::cout << "Sample size = " << samples.size() << "\n";
+		for (int i=0;i<samples.size();i++) {
+			non_m_pcm[write_count++] = floor(32768.0*samples[i]);
+			if (write_count >= WRAP_SIZE) write_count = 0;
+		}
+		//std::cout << "***************\n";
+#endif
 
     return true;
 }

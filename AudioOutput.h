@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include <RtAudio.h>
 #include "SoftFM.h"
 
 
@@ -114,7 +115,7 @@ private:
 
 
 /** Write audio data to ALSA device. */
-class AlsaAudioOutput : public AudioOutput
+class StreamAudioOutput : public AudioOutput
 {
 public:
 
@@ -125,17 +126,22 @@ public:
      * samplerate   :: audio sample rate in Hz
      * stereo       :: true if the output stream contains stereo data
      */
-    AlsaAudioOutput(const std::string& devname,
+    StreamAudioOutput(const std::string& devname,
                     unsigned int samplerate,
                     bool stereo);
 
-    ~AlsaAudioOutput();
+    ~StreamAudioOutput();
     bool write(const SampleVector& samples);
 
 private:
     unsigned int         m_nchannels;
-    struct _snd_pcm *    m_pcm;
     std::vector<std::uint8_t> m_bytebuf;
+#ifdef __APPLE__
+   	RtAudio dac;
+	  RtAudio::StreamParameters m_rt_params;
+#else
+    struct _snd_pcm *    m_pcm;
+#endif
 };
 
 #endif
