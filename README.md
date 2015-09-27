@@ -6,16 +6,9 @@ SoftFM is a software-defined radio receiver for FM broadcast radio.
 It is written in C++ and uses RTL-SDR to interface with RTL2832-based
 hardware.
 
-This program is mostly an experiment rather than a useful tool.
-The purposes of SoftFM are
- * experimenting with digital signal processing and software radio;
- * investigating the stability of the 19 kHz pilot;
- * doing the above while listening to my favorite radio station.
+**Forked from  http://github.com/jorisvr/SoftFM**
 
-Having said that, SoftFM actually produces pretty good stereo sound
-when receiving a strong radio station.  Weak stations are noisy,
-but SoftFM gets much better results than rtl_fm (bundled with RTL-SDR)
-and the few GNURadio-based FM receivers I have seen.
+**Original Code has been modified to use RTAudio instead of ALSA so it can work on Mac OSX**
 
 SoftFM provides:
  * mono or stereo decoding of FM broadcasting stations
@@ -23,15 +16,12 @@ SoftFM provides:
  * command-line interface (no GUI, no visualization, nothing fancy)
 
 SoftFM requires:
- * Linux
+ * RtAudio
  * C++11
  * RTL-SDR library (http://sdr.osmocom.org/trac/wiki/rtl-sdr)
  * supported DVB-T receiver
  * medium-fast computer (SoftFM takes 25% CPU time on my 1.6 GHz Core i3)
  * medium-strong FM radio signal
-
-For the latest version, see https://github.com/jorisvr/SoftFM
-
 
   Installing
   ----------
