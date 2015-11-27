@@ -46,7 +46,7 @@ mkdir build
 cd build
 cmake ..
 make
-./softfm -f <radio-frequency-in-Hz>
+./monofm -f <radio-frequency-in-Hz>
 ```
 
 CMake tries to find librtlsdr. If this fails, you need to specify the location of the library in one the following ways:

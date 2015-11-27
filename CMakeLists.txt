@@ -51,7 +51,7 @@ set(RTLSDR_LIBRARIES    ${RTLSDR_LIBRARY} ${LIBUSB_LIBRARY} ${RtAudio_LIBRARY} $
 # Compiler flags.
 set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -O2 -ffast-math -ftree-vectorize ${EXTRA_FLAGS}")
 
-add_executable(softfm
+add_executable(monofm
     main.cpp
     RtlSdrSource.cpp
     fm_demod.cpp
@@ -68,29 +68,12 @@ add_executable(softfm
     ${ALSA_INCLUDE_DIRS}
     ${EXTRA_INCLUDES} )
 
-target_link_libraries(softfm
+target_link_libraries(monofm
     ${CMAKE_THREAD_LIBS_INIT}
     ${RTLSDR_LIBRARIES}
     ${ALSA_LIBRARIES}
 		${SPUCE_LIBRARY}
     ${EXTRA_LIBS} )
 
-	set(TARGETS
-#		test_fir
-#		test_dcblock
-#		test_downsampler
-#		test_iir
-#		test_hpf
-#		test_rc
-		)
-  
-	FOREACH(mod ${TARGETS})
-		SET(SRC ${mod}.cpp cfft.cpp plot_fft.cpp)
-		ADD_EXECUTABLE(${mod}  ${SRC})
-		TARGET_LINK_LIBRARIES(${mod} ${SPUCE_LIBRARY} ${PYTHON_LIBRARY})
-		INSTALL(TARGETS ${mod} DESTINATION "$ENV{HOME}/bin")
-	ENDFOREACH(mod ${EXTS})
-
-	
-install(TARGETS softfm DESTINATION bin)
+install(TARGETS monofm DESTINATION bin)
 
