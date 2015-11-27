@@ -7,7 +7,7 @@ install:
   - sudo apt-get install -qq cmake
   - sudo apt-get install -qq librtaudio-dev
   - sudo apt-get install -qq libusb-1.0-0-dev
-  - sudo apt-get install -qq rtl-sdr
+  - sudo apt-get install -qq librtlsdr-dev
 before_script:
   - mkdir build
   - cd build
