@@ -10,9 +10,6 @@ find_package(PkgConfig)
 find_package(RtAudio REQUIRED)
 #find_package(ALSA REQUIRED)
 
-
-add_definitions("-DUSE_SPUC_1")
-
 IF(APPLE)
    FIND_LIBRARY(CoreFoundation_LIBRARY CoreFoundation)
    FIND_LIBRARY(CoreAudio_LIBRARY CoreAudio)

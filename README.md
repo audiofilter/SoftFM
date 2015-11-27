@@ -20,6 +20,7 @@ MonoFM provides:
 MonoFM requires:
  * RtAudio
  * C++11
+ * spuce http://github.com/audiofilter/spuce.git
  * RTL-SDR library (http://sdr.osmocom.org/trac/wiki/rtl-sdr)
  * supported DVB-T receiver
  * medium-strong FM radio signal
@@ -31,7 +32,7 @@ The Osmocom RTL-SDR library must be installed before you can build SoftFM.
 See http://sdr.osmocom.org/trac/wiki/rtl-sdr for more information.
 SoftFM has been tested successfully with RTL-SDR 0.5.3.
 
-To install MonoFM, download and unpack the source code and go to the
+To install MonoFM, install dependencies, download and unpack the source code and go to the
 top level directory. Then do like this:
 
  $ mkdir build
