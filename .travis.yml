@@ -6,9 +6,10 @@ before_install:
 install:
   - sudo apt-get install -qq cmake
   - sudo apt-get install -qq librtaudio-dev
+  - sudo apt-get install -qq libusb-1.0-0-dev
   - sudo apt-get install -qq rtl-sdr
 before_script:
   - mkdir build
   - cd build
-  - cmake .. 
+  - cmake .. -DRTLSDR_INCLUDE_DIR=/usr/local/rtlsdr/include -DRTLSDR_LIBRARY_PATH=/usr/local/rtlsdr/lib/librtlsdr.a
 script: make
