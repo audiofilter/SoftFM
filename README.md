@@ -41,7 +41,7 @@ The Osmocom RTL-SDR library must be installed before you can build SoftFM.
 See http://sdr.osmocom.org/trac/wiki/rtl-sdr for more information.
 SoftFM has been tested successfully with RTL-SDR 0.5.3.
 
-To install MonoFM, install dependencies, download and unpack the source code and go to the
+To install MonoFM, install dependencies (see .travis.yml), download and unpack the source code and go to the
 top level directory. Then do like this:
 
 ```sh
@@ -49,7 +49,7 @@ mkdir build
 cd build
 cmake ..
 make
-./monofm -f <radio-frequency-in-Hz>
+./monofm -f <radio-frequency-in-MHz>
 ```
 
 CMake tries to find librtlsdr. If this fails, you need to specify the location of the library in one the following ways:

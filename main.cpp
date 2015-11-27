@@ -226,7 +226,8 @@ static void handle_sigterm(int sig)
     msg += ", stopping ...\n";
 
     const char *s = msg.c_str();
-    write(STDERR_FILENO, s, strlen(s));
+    ssize_t ret = write(STDERR_FILENO, s, strlen(s));
+    (void)ret;
 }
 
 
