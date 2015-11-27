@@ -12,6 +12,12 @@ Original Code has been modified
  * to use RTAudio instead of ALSA so it can work on Mac OSX
  * demonstrate parts of *spuce* library
  * modified to only do mono FM demod
+ * use hard-coded IF sampling rate of 1.152MHz
+ * use hard-coded audio sample rate of 48kHz
+ * Thus a fixed downsampling ratio of 24 is used to go from IF -> Audio
+ * This is done in 2 stages,
+           the first is a factor of 6 before FM discriminator,
+           the 2nd is 4 after the discriminator
 
 MonoFM provides:
  * real-time playback to soundcard or dumping to file

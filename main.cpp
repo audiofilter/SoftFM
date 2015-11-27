@@ -238,8 +238,6 @@ void usage()
             "  -d devidx     RTL-SDR device index, 'list' to show device list (default 0)\n"
             "  -g gain       Set LNA gain in dB, or 'auto' (default auto)\n"
             "  -a            Enable RTL AGC mode (default disabled)\n"
-            "  -s ifrate     IF sample rate in Hz (default 1000000, min 900001)\n"
-            "  -r pcmrate    Audio sample rate in Hz (default 48000 Hz)\n"
             "  -M            Disable stereo decoding\n"
             "  -R filename   Write audio data as raw S16_LE samples\n"
             "                use filename '-' to write to stdout\n"
@@ -331,8 +329,6 @@ int main(int argc, char **argv)
         { "freq",       1, NULL, 'f' },
         { "dev",        1, NULL, 'd' },
         { "gain",       1, NULL, 'g' },
-        { "ifrate",     1, NULL, 's' },
-        { "pcmrate",    1, NULL, 'r' },
         { "agc",        0, NULL, 'a' },
         { "mono",       0, NULL, 'M' },
         { "raw",        1, NULL, 'R' },
@@ -371,17 +367,6 @@ int main(int argc, char **argv)
                         badarg("-g");
                     }
                     lnagain = tmpgain2;
-                }
-                break;
-            case 's':
-                // NOTE: RTL does not suppor sample rate 900 kS/s or lower
-                if (!parse_dbl(optarg, ifrate) || ifrate <= 900000) {
-                    badarg("-s");
-                }
-                break;
-            case 'r':
-                if (!parse_int(optarg, pcmrate, true) || pcmrate < 1) {
-                    badarg("-r");
                 }
                 break;
             case 'M':
