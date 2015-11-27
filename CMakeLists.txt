@@ -10,6 +10,9 @@ find_package(PkgConfig)
 find_package(RtAudio REQUIRED)
 #find_package(ALSA REQUIRED)
 
+
+add_definitions("-DUSE_SPUC_1")
+
 IF(APPLE)
    FIND_LIBRARY(CoreFoundation_LIBRARY CoreFoundation)
    FIND_LIBRARY(CoreAudio_LIBRARY CoreAudio)
@@ -24,6 +27,10 @@ find_path(RTLSDR_INCLUDE_DIR rtl-sdr.h
 find_library(RTLSDR_LIBRARY librtlsdr.a
              HINT ${PKG_RTLSDR_LIBRARY_DIRS})
 
+find_library(SPUCE_LIBRARY libspuce.a HINT "/usr/local/lib")
+					 
+FIND_PACKAGE(PythonLibs REQUIRED)
+					 
 # Find libusb
 pkg_check_modules(PKG_LIBUSB libusb-1.0)
 find_path(LIBUSB_INCLUDE_DIR libusb.h
@@ -48,13 +55,18 @@ set(RTLSDR_LIBRARIES    ${RTLSDR_LIBRARY} ${LIBUSB_LIBRARY} ${RtAudio_LIBRARY} $
 set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -O2 -ffast-math -ftree-vectorize ${EXTRA_FLAGS}")
 
 add_executable(softfm
-    main.cc
-    RtlSdrSource.cc
-    Filter.cc
-    FmDecode.cc
-    AudioOutput.cc )
+    main.cpp
+    RtlSdrSource.cpp
+    fm_demod.cpp
+    pre_fm.cpp
+    fm_discriminator.cpp
+    rotate90.cpp
+    AudioOutput.cpp
+    )
 
-include_directories(
+	include_directories(
+		${PYTHON_INCLUDE_DIRS}
+		${CMAKE_CURRENT_SOURCE_DIR}
     ${RTLSDR_INCLUDE_DIRS}
     ${ALSA_INCLUDE_DIRS}
     ${EXTRA_INCLUDES} )
@@ -63,7 +75,25 @@ target_link_libraries(softfm
     ${CMAKE_THREAD_LIBS_INIT}
     ${RTLSDR_LIBRARIES}
     ${ALSA_LIBRARIES}
+		${SPUCE_LIBRARY}
     ${EXTRA_LIBS} )
 
+	set(TARGETS
+#		test_fir
+#		test_dcblock
+#		test_downsampler
+#		test_iir
+#		test_hpf
+#		test_rc
+		)
+  
+	FOREACH(mod ${TARGETS})
+		SET(SRC ${mod}.cpp cfft.cpp plot_fft.cpp)
+		ADD_EXECUTABLE(${mod}  ${SRC})
+		TARGET_LINK_LIBRARIES(${mod} ${SPUCE_LIBRARY} ${PYTHON_LIBRARY})
+		INSTALL(TARGETS ${mod} DESTINATION "$ENV{HOME}/bin")
+	ENDFOREACH(mod ${EXTS})
+
+	
 install(TARGETS softfm DESTINATION bin)
 

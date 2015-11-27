@@ -29,6 +29,7 @@
 #include <cerrno>
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 
 #ifdef __APPLE__
 #include <RtAudio.h>
@@ -36,7 +37,6 @@
 #include <alsa/asoundlib.h>
 #endif
 
-#include "SoftFM.h"
 #include "AudioOutput.h"
 
 using namespace std;
@@ -57,38 +57,56 @@ typedef signed short MY_TYPE;
 unsigned channels=2;
 
 #ifdef __APPLE__
-static int16_t *non_m_pcm;
 unsigned bufferFrames = 512;
-const int NUM_BUFFERS = 32*4;
-const int WRAP_SIZE = NUM_BUFFERS * bufferFrames * 2;
-static long write_count = 0;
-static long read_count = 0;
+const int NUM_SECS = 4;
+const int WRAP_SIZE = NUM_SECS * 48000 * 2;
 static int begin_read = 0;
+static int max_buffer_level = 0;
+static int min_buffer_level = 0;
+fifo<int16_t>   non_m_fifo(WRAP_SIZE);
 #endif
 
-int saw( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
+int audio_callback( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
          double /*streamTime*/, RtAudioStreamStatus status, void *data )
 {
   unsigned int i, j;
   extern unsigned int channels;
   MY_TYPE *buffer = (MY_TYPE *) outputBuffer;
-  int16_t *Vals = (int16_t *) data;
-
+	fifo<std::uint16_t>* Vals = 	reinterpret_cast<fifo<std::uint16_t>*>(data);
   if ( status )
     std::cout << "Stream underflow detected!" << std::endl;
 
-	if (write_count > 2*channels*bufferFrames) begin_read = 1;
-
-	//std::cout << "in saw " << channels << " channels + " << nBufferFrames << " frames \n";
+	int fill = Vals->fill_amount();
 	
+	if (Vals->half_full()) {
+		if (begin_read == 0) {
+			min_buffer_level = fill;
+			max_buffer_level = fill;
+		}
+		begin_read = 1;
+	}
+
+	if (fill > max_buffer_level) {
+		max_buffer_level = fill;
+		if (min_buffer_level/(float)WRAP_SIZE  > 0.75)
+			std::cout << "New max level = " << max_buffer_level/(float)WRAP_SIZE << "\n";
+	}
+	if (begin_read && fill < min_buffer_level) {
+		min_buffer_level = fill;
+		if (min_buffer_level/(float)WRAP_SIZE  < 0.25)
+			std::cout << "New min level = " << min_buffer_level/(float)WRAP_SIZE << "\n";
+	}
+
+	MY_TYPE last;
 	for ( j=0; j<channels; j++ ) {
 		for ( i=0; i<nBufferFrames; i++ ) {
 			if (begin_read) {
-				//if (read_count < 8) std::cout << (MY_TYPE)Vals[read_count] << " ";
-				//else if (read_count == 8) std::cout << "\n";
-				*buffer++ = (MY_TYPE)Vals[read_count];
-				read_count ++;
-				if (read_count >= WRAP_SIZE) read_count = 0;
+				if ( ((i%256)==0) && ((min_buffer_level/(float)WRAP_SIZE) < 0.25) ) {
+					*buffer++ = 0;
+				} else {
+					last = (MY_TYPE)(Vals->read());
+					*buffer++ = last;
+				}
 			} else {
 				*buffer++ = 0;
 			}
@@ -104,22 +122,22 @@ int saw( void *outputBuffer, void * /*inputBuffer*/, unsigned int nBufferFrames,
 /* ****************  class AudioOutput  **************** */
 
 // Encode a list of samples as signed 16-bit little-endian integers.
-void AudioOutput::samplesToInt16(const SampleVector& samples,
-                                 vector<uint8_t>& bytes)
+void AudioOutput::samplesToInt16(const std::vector<double>& samples,
+                                 std::vector<uint8_t>& bytes)
 {
     bytes.resize(2 * samples.size());
 
-    SampleVector::const_iterator i = samples.begin();
-    SampleVector::const_iterator n = samples.end();
-    vector<uint8_t>::iterator k = bytes.begin();
+    std::vector<double>::const_iterator i = samples.begin();
+    std::vector<double>::const_iterator n = samples.end();
+    std::vector<uint8_t>::iterator k = bytes.begin();
 
     while (i != n) {
-        Sample s = *(i++);
-        s = max(Sample(-1.0), min(Sample(1.0), s));
-        long v = lrint(s * 32767);
-        unsigned long u = v;
-        *(k++) = u & 0xff;
-        *(k++) = (u >> 8) & 0xff;
+      double s = *(i++);
+      s = max(-1.0, min(1.0, s));
+      long v = lrint(s * 32767);
+      unsigned long u = v;
+      *(k++) = u & 0xff;
+      *(k++) = (u >> 8) & 0xff;
     }
 }
 
@@ -158,7 +176,7 @@ RawAudioOutput::~RawAudioOutput()
 
 
 // Write audio data.
-bool RawAudioOutput::write(const SampleVector& samples)
+bool RawAudioOutput::write(const std::vector<double>& samples)
 {
     if (m_fd < 0)
         return false;
@@ -248,7 +266,7 @@ WavAudioOutput::~WavAudioOutput()
 
 
 // Write audio data.
-bool WavAudioOutput::write(const SampleVector& samples)
+bool WavAudioOutput::write(const std::vector<double>& samples)
 {
     if (m_zombie)
         return false;
@@ -375,10 +393,11 @@ StreamAudioOutput::StreamAudioOutput(const std::string& devname,
 		options.flags |= RTAUDIO_SCHEDULE_REALTIME;
 
 		std::cout << "m_pcm size = " << m_nchannels * bufferFrames << "\n";
-		non_m_pcm = (int16_t *) calloc( WRAP_SIZE, sizeof( int16_t ) );
-		
+		//		non_m_pcm = (int16_t *) calloc( WRAP_SIZE, sizeof( int16_t ) );
+
+		//std::cout << "Addres = " << &non_m_fifo << "\n";
 		try {
-			dac.openStream( &m_rt_params, NULL, RTAUDIO_SINT16, 48000, &bufferFrames, &saw, (void *)non_m_pcm, &options, &errorCallback );
+			dac.openStream( &m_rt_params, NULL, RTAUDIO_SINT16, 48000, &bufferFrames, &audio_callback, reinterpret_cast<void *>(&non_m_fifo), &options, &errorCallback );
 			dac.startStream();
 		}
 		catch ( RtAudioError& e ) {
@@ -401,7 +420,7 @@ StreamAudioOutput::~StreamAudioOutput()
 
 
 // Write audio data.
-bool StreamAudioOutput::write(const SampleVector& samples)
+bool StreamAudioOutput::write(const std::vector<double>& samples)
 {
     if (m_zombie)
         return false;
@@ -430,12 +449,7 @@ bool StreamAudioOutput::write(const SampleVector& samples)
         }
     }
 #else
-		//std::cout << "Sample size = " << samples.size() << "\n";
-		for (int i=0;i<samples.size();i++) {
-			non_m_pcm[write_count++] = floor(32768.0*samples[i]);
-			if (write_count >= WRAP_SIZE) write_count = 0;
-		}
-		//std::cout << "***************\n";
+		for (int i=0;i<samples.size();i++) non_m_fifo.write(floor(32768.0*samples[i]));
 #endif
 
     return true;

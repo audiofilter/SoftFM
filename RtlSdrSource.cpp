@@ -1,4 +1,3 @@
-
 #include <climits>
 #include <cstring>
 #include <rtl-sdr.h>
@@ -6,6 +5,27 @@
 #include "RtlSdrSource.h"
 
 using namespace std;
+/*
+ *  Audio output handling for SoftFM
+ *
+ *  Copyright (C) 2013, Joris van Rantwijk.
+ *
+ *  .WAV file writing by Sidney Cadot,
+ *  adapted for SoftFM by Joris van Rantwijk.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, see http://www.gnu.org/licenses/gpl-2.0.html
+ */
 
 
 // Open RTL-SDR device.
@@ -125,29 +145,29 @@ int RtlSdrSource::get_tuner_gain()
 
 
 // Return a list of supported tuner gain settings in units of 0.1 dB.
-vector<int> RtlSdrSource::get_tuner_gains()
+std::vector<int> RtlSdrSource::get_tuner_gains()
 {
     int num_gains = rtlsdr_get_tuner_gains(m_dev, NULL);
     if (num_gains <= 0)
-        return vector<int>();
+        return std::vector<int>();
 
-    vector<int> gains(num_gains);
+    std::vector<int> gains(num_gains);
     if (rtlsdr_get_tuner_gains(m_dev, gains.data()) != num_gains)
-        return vector<int>();
+        return std::vector<int>();
 
     return gains;
 }
 
 
 // Fetch a bunch of samples from the device.
-bool RtlSdrSource::get_samples(IQSampleVector& samples)
+bool RtlSdrSource::get_samples(std::vector<std::complex<double>>& samples)
 {
     int r, n_read;
 
     if (!m_dev)
         return false;
 
-    vector<uint8_t> buf(2 * m_block_length);
+    std::vector<uint8_t> buf(2 * m_block_length);
 
     r = rtlsdr_read_sync(m_dev, buf.data(), 2 * m_block_length, &n_read);
     if (r < 0) {
@@ -164,8 +184,8 @@ bool RtlSdrSource::get_samples(IQSampleVector& samples)
     for (int i = 0; i < m_block_length; i++) {
         int32_t re = buf[2*i];
         int32_t im = buf[2*i+1];
-        samples[i] = IQSample( (re - 128) / IQSample::value_type(128),
-                               (im - 128) / IQSample::value_type(128) );
+        samples[i] = std::complex<double>( (re - 128) / float(128),
+                               (im - 128) / float(128) );
     }
 
     return true;
@@ -173,9 +193,9 @@ bool RtlSdrSource::get_samples(IQSampleVector& samples)
 
 
 // Return a list of supported devices.
-vector<string> RtlSdrSource::get_device_names()
+std::vector<string> RtlSdrSource::get_device_names()
 {
-    vector<string> result;
+    std::vector<string> result;
 
     int device_count = rtlsdr_get_device_count();
     if (device_count <= 0)

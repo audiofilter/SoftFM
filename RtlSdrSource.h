@@ -1,12 +1,30 @@
-#ifndef SOFTFM_RTLSDRSOURCE_H
-#define SOFTFM_RTLSDRSOURCE_H
+#pragma once
+/*
+ *  Audio output handling for SoftFM
+ *
+ *  Copyright (C) 2013, Joris van Rantwijk.
+ *
+ *  .WAV file writing by Sidney Cadot,
+ *  adapted for SoftFM by Joris van Rantwijk.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, see http://www.gnu.org/licenses/gpl-2.0.html
+ */
 
 #include <cstdint>
 #include <string>
 #include <vector>
-
-#include "SoftFM.h"
-
+#include <complex>
 
 class RtlSdrSource
 {
@@ -60,7 +78,7 @@ public:
      * This function must be called regularly to maintain streaming.
      * Return true for success, false if an error occurred.
      */
-    bool get_samples(IQSampleVector& samples);
+    bool get_samples(std::vector<std::complex<double>>& samples);
 
     /** Return the last error, or return an empty string if there is no error. */
     std::string error()
@@ -86,4 +104,3 @@ private:
     std::string         m_error;
 };
 
-#endif

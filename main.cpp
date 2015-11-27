@@ -34,12 +34,31 @@
 #include <getopt.h>
 #include <sys/time.h>
 
-#include "SoftFM.h"
 #include "RtlSdrSource.h"
-#include "FmDecode.h"
+#include "pre_fm.h"
+#include "fm_demod.h"
 #include "AudioOutput.h"
 
 using namespace std;
+
+typedef double Sample;
+
+inline void samples_mean_rms(const std::vector<double>& samples,
+                             double& mean, double& rms)
+{
+    Sample vsum = 0;
+    Sample vsumsq = 0;
+
+    unsigned int n = samples.size();
+    for (unsigned int i = 0; i < n; i++) {
+        Sample v = samples[i];
+        vsum   += v;
+        vsumsq += v * v;
+    }
+
+    mean = vsum / n;
+    rms  = std::sqrt(vsumsq / n);
+}
 
 
 /** Flag is set on SIGINT / SIGTERM. */
@@ -58,7 +77,7 @@ public:
     { }
 
     /** Add samples to the queue. */
-    void push(vector<Element>&& samples)
+    void push(std::vector<Element>&& samples)
     {
         if (!samples.empty()) {
             unique_lock<mutex> lock(m_mutex);
@@ -91,9 +110,9 @@ public:
      * an empty vector. If the queue is empty, wait until more data is pushed
      * or until the end marker is pushed.
      */
-    vector<Element> pull()
+    std::vector<Element> pull()
     {
-        vector<Element> ret;
+        std::vector<Element> ret;
         unique_lock<mutex> lock(m_mutex);
         while (m_queue.empty() && !m_end_marked)
             m_cond.wait(lock);
@@ -123,14 +142,14 @@ public:
 private:
     size_t              m_qlen;
     bool                m_end_marked;
-    queue<vector<Element>> m_queue;
+    queue<std::vector<Element>> m_queue;
     mutex               m_mutex;
     condition_variable  m_cond;
 };
 
 
 /** Simple linear gain adjustment. */
-void adjust_gain(SampleVector& samples, double gain)
+void adjust_gain(std::vector<double>& samples, double gain)
 {
     for (unsigned int i = 0, n = samples.size(); i < n; i++) {
         samples[i] *= gain;
@@ -146,9 +165,9 @@ void adjust_gain(SampleVector& samples, double gain)
  * Running this in a background thread ensures that the time between calls
  * to RtlSdrSource::get_samples() is very short. 
  */
-void read_source_data(RtlSdrSource *rtlsdr, DataBuffer<IQSample> *buf)
+void read_source_data(RtlSdrSource *rtlsdr, DataBuffer<std::complex<double>> *buf)
 {
-    IQSampleVector iqsamples;
+    std::vector<std::complex<double>> iqsamples;
 
     while (!stop_flag.load()) {
 
@@ -188,7 +207,7 @@ void write_output_data(AudioOutput *output, DataBuffer<Sample> *buf,
         }
 
         // Get samples from buffer and write to output.
-        SampleVector samples = buf->pull();
+        std::vector<double> samples = buf->pull();
         output->write(samples);
         if (!(*output)) {
             fprintf(stderr, "ERROR: AudioOutput: %s\n", output->error().c_str());
@@ -215,7 +234,7 @@ void usage()
 {
     fprintf(stderr,
     "Usage: softfm -f freq [options]\n"
-            "  -f freq       Frequency of radio station in Hz\n"
+            "  -f freq       Frequency of radio station in MHz\n"
             "  -d devidx     RTL-SDR device index, 'list' to show device list (default 0)\n"
             "  -g gain       Set LNA gain in dB, or 'auto' (default auto)\n"
             "  -a            Enable RTL AGC mode (default disabled)\n"
@@ -294,7 +313,7 @@ int main(int argc, char **argv)
     int     devidx  = 0;
     int     lnagain = INT_MIN;
     bool    agcmode = false;
-    double  ifrate  = 1.0e6;
+    double  ifrate  = 1.152e6;
     int     pcmrate = 48000;
     bool    stereo  = true;
     enum OutputMode { MODE_RAW, MODE_WAV, MODE_ALSA };
@@ -405,7 +424,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    vector<string> devnames = RtlSdrSource::get_device_names();
+    std::vector<string> devnames = RtlSdrSource::get_device_names();
     if (devidx < 0 || (unsigned int)devidx >= devnames.size()) {
         if (devidx != -1)
             fprintf(stderr, "ERROR: invalid device index %d\n", devidx);
@@ -438,7 +457,7 @@ int main(int argc, char **argv)
     }
 
     // Intentionally tune at a higher frequency to avoid DC offset.
-    double tuner_freq = freq + 0.25 * ifrate;
+    double tuner_freq = (freq * 1e6) + 0.25 * ifrate;
 
     // Open RTL-SDR device.
     RtlSdrSource rtlsdr(devidx);
@@ -449,7 +468,7 @@ int main(int argc, char **argv)
 
     // Check LNA gain.
     if (lnagain != INT_MIN) {
-        vector<int> gains = rtlsdr.get_tuner_gains();
+        std::vector<int> gains = rtlsdr.get_tuner_gains();
         if (find(gains.begin(), gains.end(), lnagain) == gains.end()) {
             if (lnagain != INT_MIN + 1)
                 fprintf(stderr, "ERROR: LNA gain %.1f dB not supported by tuner\n", lnagain * 0.1);
@@ -475,17 +494,14 @@ int main(int argc, char **argv)
     if (lnagain == INT_MIN)
         fprintf(stderr, "LNA gain:          auto\n");
     else
-        fprintf(stderr, "LNA gain:          %.1f dB\n",
-                0.1 * rtlsdr.get_tuner_gain());
+        fprintf(stderr, "LNA gain:          %.1f dB\n", 0.1 * rtlsdr.get_tuner_gain());
 
     ifrate = rtlsdr.get_sample_rate();
     fprintf(stderr, "IF sample rate:    %.0f Hz\n", ifrate);
-
-    fprintf(stderr, "RTL AGC mode:      %s\n",
-            agcmode ? "enabled" : "disabled");
+    fprintf(stderr, "RTL AGC mode:      %s\n", agcmode ? "enabled" : "disabled");
 
     // Create source data queue.
-    DataBuffer<IQSample> source_buffer;
+    DataBuffer<std::complex<double>> source_buffer;
 
     // Start reading from device in separate thread.
     thread source_thread(read_source_data, &rtlsdr, &source_buffer);
@@ -493,24 +509,15 @@ int main(int argc, char **argv)
     // The baseband signal is empty above 100 kHz, so we can
     // downsample to ~ 200 kS/s without loss of information.
     // This will speed up later processing stages.
-    unsigned int downsample = max(1, int(ifrate / 215.0e3));
+    unsigned int downsample = max(1, int(ifrate / 192.0e3));
     fprintf(stderr, "baseband downsampling factor %u\n", downsample);
 
     // Prevent aliasing at very low output sample rates.
-    double bandwidth_pcm = min(FmDecoder::get_default_bandwidth_pcm(),  0.45 * pcmrate);
     fprintf(stderr, "audio sample rate: %u Hz\n", pcmrate);
-    fprintf(stderr, "audio bandwidth:   %.3f kHz\n", bandwidth_pcm * 1.0e-3);
 
+    pre_fm PRE(downsample);
     // Prepare decoder.
-    FmDecoder fm(ifrate,                            // sample_rate_if
-                 freq - tuner_freq,                 // tuning_offset
-                 pcmrate,                           // sample_rate_pcm
-                 stereo,                            // stereo
-                 FmDecoder::default_deemphasis,     // deemphasis,
-                 FmDecoder::default_bandwidth_if,   // bandwidth_if
-                 FmDecoder::default_freq_dev,       // freq_dev
-                 bandwidth_pcm,                     // bandwidth_pcm
-                 downsample);                       // downsample
+    fm_demod fm;
 
     // Calculate number of samples in audio buffer.
     unsigned int outputbuf_samples = 0;
@@ -582,10 +589,10 @@ int main(int argc, char **argv)
                                outputbuf_samples * nchannel);
     }
 
-    SampleVector audiosamples;
+    std::vector<std::complex<double>> if_samples;
+    std::vector<double> audiosamples;
     bool inbuf_length_warning = false;
     double audio_level = 0;
-    bool got_stereo = false;
 
     double block_time = get_time();
 
@@ -601,15 +608,15 @@ int main(int argc, char **argv)
         }
 
         // Pull next block from source buffer.
-        IQSampleVector iqsamples = source_buffer.pull();
+        std::vector<std::complex<double>> iqsamples = source_buffer.pull();
         if (iqsamples.empty())
             break;
 
-        double prev_block_time = block_time;
         block_time = get_time();
 
+        PRE.process(iqsamples, if_samples);
         // Decode FM signal.
-        fm.process(iqsamples, audiosamples);
+        fm.process(if_samples, audiosamples);
 
         // Measure audio level.
         double audio_mean, audio_rms;
@@ -617,16 +624,10 @@ int main(int argc, char **argv)
         audio_level = 0.95 * audio_level + 0.05 * audio_rms;
 
         // Set nominal audio volume.
-        adjust_gain(audiosamples, 0.5);
+        adjust_gain(audiosamples, 0.25);
 
         // Show statistics.
-        fprintf(stderr,
-                "\rblk=%6d  freq=%8.4fMHz  IF=%+5.1fdB  BB=%+5.1fdB  audio=%+5.1fdB ",
-                block,
-                (tuner_freq + fm.get_tuning_offset()) * 1.0e-6,
-                20*log10(fm.get_if_level()),
-                20*log10(fm.get_baseband_level()) + 3.01,
-                20*log10(audio_level) + 3.01);
+        fprintf(stderr,"\rblk=%6d audio=%+5.1fdB ", block, 20*log10(audio_level) + 3.01);
         if (outputbuf_samples > 0) {
             unsigned int nchannel = stereo ? 2 : 1;
             size_t buflen = output_buffer.queued_samples();
@@ -635,30 +636,7 @@ int main(int argc, char **argv)
                     buflen / nchannel / double(pcmrate));
         }
         fflush(stderr);
-
-        // Show stereo status.
-        if (fm.stereo_detected() != got_stereo) {
-            got_stereo = fm.stereo_detected();
-            if (got_stereo)
-                fprintf(stderr, "\ngot stereo signal (pilot level = %f)\n",
-                        fm.get_pilot_level());
-            else
-                fprintf(stderr, "\nlost stereo signal\n");
-        }
-
-        // Write PPS markers.
-        if (ppsfile != NULL) {
-            for (const PilotPhaseLock::PpsEvent& ev : fm.get_pps_events()) {
-                double ts = prev_block_time;
-                ts += ev.block_position * (block_time - prev_block_time);
-                fprintf(ppsfile, "%8s %14s %18.6f\n",
-                        to_string(ev.pps_index).c_str(),
-                        to_string(ev.sample_index).c_str(),
-                        ts);
-                fflush(ppsfile);
-            }
-        }
-
+				
         // Throw away first block. It is noisy because IF filters
         // are still starting up.
         if (block > 0) {

@@ -1,5 +1,26 @@
 #ifndef SOFTFM_AUDIOOUTPUT_H
 #define SOFTFM_AUDIOOUTPUT_H
+/*
+ *  Audio output handling for SoftFM
+ *
+ *  Copyright (C) 2013, Joris van Rantwijk.
+ *
+ *  .WAV file writing by Sidney Cadot,
+ *  adapted for SoftFM by Joris van Rantwijk.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, see http://www.gnu.org/licenses/gpl-2.0.html
+ */
 
 #include <cstdint>
 #include <cstdio>
@@ -7,8 +28,7 @@
 #include <vector>
 
 #include <RtAudio.h>
-#include "SoftFM.h"
-
+#include "fifo.h"
 
 /** Base class for writing audio data to file or playback. */
 class AudioOutput
@@ -24,7 +44,7 @@ public:
      * Return true on success.
      * Return false if an error occurs.
      */
-    virtual bool write(const SampleVector& samples) = 0;
+    virtual bool write(const std::vector<double>& samples) = 0;
 
     /** Return the last error, or return an empty string if there is no error. */
     std::string error()
@@ -45,7 +65,7 @@ protected:
     AudioOutput() : m_zombie(false) { }
 
     /** Encode a list of samples as signed 16-bit little-endian integers. */
-    static void samplesToInt16(const SampleVector& samples,
+    static void samplesToInt16(const std::vector<double>& samples,
                                std::vector<std::uint8_t>& bytes);
 
     std::string m_error;
@@ -70,7 +90,7 @@ public:
     RawAudioOutput(const std::string& filename);
 
     ~RawAudioOutput();
-    bool write(const SampleVector& samples);
+    bool write(const std::vector<double>& samples);
 
 private:
     int m_fd;
@@ -95,7 +115,7 @@ public:
                    bool stereo);
 
     ~WavAudioOutput();
-    bool write(const SampleVector& samples);
+    bool write(const std::vector<double>& samples);
 
 private:
 
@@ -131,15 +151,15 @@ public:
                     bool stereo);
 
     ~StreamAudioOutput();
-    bool write(const SampleVector& samples);
+    bool write(const std::vector<double>& samples);
 
 private:
     unsigned int         m_nchannels;
-    std::vector<std::uint8_t> m_bytebuf;
 #ifdef __APPLE__
    	RtAudio dac;
 	  RtAudio::StreamParameters m_rt_params;
 #else
+    std::vector<std::uint8_t> m_bytebuf;
     struct _snd_pcm *    m_pcm;
 #endif
 };

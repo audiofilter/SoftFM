@@ -1,26 +1,27 @@
 
-  SoftFM - Software decoder for FM broadcast radio with RTL-SDR
+  MonoFM - Software decoder for FM broadcast radio with RTL-SDR
  ---------------------------------------------------------------
 
-SoftFM is a software-defined radio receiver for FM broadcast radio.
-It is written in C++ and uses RTL-SDR to interface with RTL2832-based
-hardware.
+MonoFM is based on SoftFM which is a software-defined radio receiver for FM broadcast radio.
+It is written in C++ and uses RTL-SDR to interface with RTL2832-based hardware.
 
 **Forked from  http://github.com/jorisvr/SoftFM**
 
-**Original Code has been modified to use RTAudio instead of ALSA so it can work on Mac OSX**
+Original Code has been modified
 
-SoftFM provides:
- * mono or stereo decoding of FM broadcasting stations
+ * to use RTAudio instead of ALSA so it can work on Mac OSX
+ * demonstrate parts of *spuce* library
+ * modified to only do mono FM demod
+
+MonoFM provides:
  * real-time playback to soundcard or dumping to file
  * command-line interface (no GUI, no visualization, nothing fancy)
 
-SoftFM requires:
+MonoFM requires:
  * RtAudio
  * C++11
  * RTL-SDR library (http://sdr.osmocom.org/trac/wiki/rtl-sdr)
  * supported DVB-T receiver
- * medium-fast computer (SoftFM takes 25% CPU time on my 1.6 GHz Core i3)
  * medium-strong FM radio signal
 
   Installing
@@ -30,7 +31,7 @@ The Osmocom RTL-SDR library must be installed before you can build SoftFM.
 See http://sdr.osmocom.org/trac/wiki/rtl-sdr for more information.
 SoftFM has been tested successfully with RTL-SDR 0.5.3.
 
-To install SoftFM, download and unpack the source code and go to the
+To install MonoFM, download and unpack the source code and go to the
 top level directory. Then do like this:
 
  $ mkdir build
@@ -50,11 +51,12 @@ top level directory. Then do like this:
 
  # ( enjoy music )
 
+--
 
-  License
-  -------
+License
 
-SoftFM, copyright (C) 2013, Joris van Rantwijk
+See files for Licensing. If no License, info, then code is forked code from SoftFM
+, copyright (C) 2013, Joris van Rantwijk
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
