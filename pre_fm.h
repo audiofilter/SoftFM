@@ -3,21 +3,18 @@
 
 #include <cstdint>
 #include <vector>
-
-#include "rotate90.h"
+#include <complex>
 #include <spuce/filters/fir_decim.h>
 
 class pre_fm
 {
 public:
   pre_fm(unsigned int downsample=1);
-  // Down-convert + Down-sample
+  // just down-sample
   void process(const std::vector<std::complex<double>>& samples_in,
                std::vector<std::complex<double>>& if_out);
 
 private:
-  rotate90            m_rotator;
-  std::vector<std::complex<double>>  m_buf_iftuned;
   spuce::fir_decim<std::complex<double>>  m_iffilter;
 };
 

@@ -58,7 +58,6 @@ add_executable(monofm
     fm_demod.cpp
     pre_fm.cpp
     fm_discriminator.cpp
-    rotate90.cpp
     AudioOutput.cpp
     )
 

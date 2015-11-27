@@ -1,9 +1,7 @@
 // Copyright (c) 2015 Tony Kirke.  Boost Software License - Version 1.0  (http://www.opensource.org/licenses/BSL-1.0)
-#include <cassert>
-#include <cmath>
-#include <complex>
-#include <spuce/filters/design_fir.h>
 #include "pre_fm.h"
+#include <cmath>
+#include <spuce/filters/design_fir.h>
 
 using spuce::design_fir;
 
@@ -18,8 +16,7 @@ pre_fm::pre_fm(unsigned int rate)
 void pre_fm::process(const std::vector<std::complex<double>>& samples_in,
                      std::vector<std::complex<double>>& if_out)
 {
-  m_rotator.process(samples_in, m_buf_iftuned);
-  m_iffilter.process(m_buf_iftuned, if_out);
+  m_iffilter.process(samples_in, if_out);
 }
 
 
