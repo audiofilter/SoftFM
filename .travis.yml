@@ -13,7 +13,7 @@ install:
   - mkdir build
   - cd build
   - cmake ..
-  - make install
+  - sudo make install
   - cd ../..
 before_script:
   - mkdir build
