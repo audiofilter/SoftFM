@@ -41,22 +41,20 @@ SoftFM has been tested successfully with RTL-SDR 0.5.3.
 To install MonoFM, install dependencies, download and unpack the source code and go to the
 top level directory. Then do like this:
 
- $ mkdir build
- $ cd build
- $ cmake ..
+```sh
+mkdir build
+cd build
+cmake ..
+make
+./softfm -f <radio-frequency-in-Hz>
+```
 
- # CMake tries to find librtlsdr. If this fails, you need to specify
- # the location of the library in one the following ways:
- #
- #  $ cmake .. -DCMAKE_INSTALL_PREFIX=/path/rtlsdr
- #  $ cmake .. -DRTLSDR_INCLUDE_DIR=/path/rtlsdr/include -DRTLSDR_LIBRARY_PATH=/path/rtlsdr/lib/librtlsdr.a
- #  $ PKG_CONFIG_PATH=/path/rtlsdr/lib/pkgconfig cmake ..
-
- $ make
-
- $ ./softfm -f <radio-frequency-in-Hz>
-
- # ( enjoy music )
+# CMake tries to find librtlsdr. If this fails, you need to specify
+# the location of the library in one the following ways:
+#
+#  $ cmake .. -DCMAKE_INSTALL_PREFIX=/path/rtlsdr
+#  $ cmake .. -DRTLSDR_INCLUDE_DIR=/path/rtlsdr/include -DRTLSDR_LIBRARY_PATH=/path/rtlsdr/lib/librtlsdr.a
+#  $ PKG_CONFIG_PATH=/path/rtlsdr/lib/pkgconfig cmake ..
 
 --
 
