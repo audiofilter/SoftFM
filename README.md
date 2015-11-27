@@ -49,12 +49,12 @@ make
 ./softfm -f <radio-frequency-in-Hz>
 ```
 
-# CMake tries to find librtlsdr. If this fails, you need to specify
-# the location of the library in one the following ways:
-#
-#  $ cmake .. -DCMAKE_INSTALL_PREFIX=/path/rtlsdr
-#  $ cmake .. -DRTLSDR_INCLUDE_DIR=/path/rtlsdr/include -DRTLSDR_LIBRARY_PATH=/path/rtlsdr/lib/librtlsdr.a
-#  $ PKG_CONFIG_PATH=/path/rtlsdr/lib/pkgconfig cmake ..
+ # CMake tries to find librtlsdr. If this fails, you need to specify
+ # the location of the library in one the following ways:
+ #
+ #  $ cmake .. -DCMAKE_INSTALL_PREFIX=/path/rtlsdr
+ #  $ cmake .. -DRTLSDR_INCLUDE_DIR=/path/rtlsdr/include -DRTLSDR_LIBRARY_PATH=/path/rtlsdr/lib/librtlsdr.a
+ #  $ PKG_CONFIG_PATH=/path/rtlsdr/lib/pkgconfig cmake ..
 
 --
 
