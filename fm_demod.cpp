@@ -41,7 +41,7 @@ void fm_demod::process(const std::vector<std::complex<double>>& samples_in,
   m_resample_mono.process(fm_disc_out, buf_mono);
   
   // DC blocking and de-emphasis.
-  for (int i=0;i<buf_mono.size();i++) {
+  for (size_t i=0;i<buf_mono.size();i++) {
     buf_mono[i] = m_dcblock_mono.clock(buf_mono[i]);
     buf_mono[i] = m_deemph_mono.clock(buf_mono[i]);
   }

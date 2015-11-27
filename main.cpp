@@ -579,7 +579,7 @@ int main(int argc, char **argv)
     bool inbuf_length_warning = false;
     double audio_level = 0;
 
-    double block_time = get_time();
+    //double block_time = get_time();
 
     // Main loop.
     for (unsigned int block = 0; !stop_flag.load(); block++) {
@@ -597,7 +597,7 @@ int main(int argc, char **argv)
         if (iqsamples.empty())
             break;
 
-        block_time = get_time();
+        //        block_time = get_time();
 
         PRE.process(iqsamples, if_samples);
         // Decode FM signal.

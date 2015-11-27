@@ -2,6 +2,9 @@
   MonoFM - Software decoder for FM broadcast radio with RTL-SDR
  ---------------------------------------------------------------
 
+
+- Travis: [![Build Status](https://travis-ci.org/audiofilter/SoftFM.png)](https://travis-ci.org/audiofilter/SoftFM)
+
 MonoFM is based on SoftFM which is a software-defined radio receiver for FM broadcast radio.
 It is written in C++ and uses RTL-SDR to interface with RTL2832-based hardware.
 
