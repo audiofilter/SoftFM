@@ -18,5 +18,5 @@ install:
 before_script:
   - mkdir build
   - cd build
-  - cmake .. -DRTLSDR_INCLUDE_DIR=/usr/local/rtlsdr/include -DRTLSDR_LIBRARY_PATH=/usr/local/rtlsdr/lib/librtlsdr.a
+  - cmake ..
 script: make

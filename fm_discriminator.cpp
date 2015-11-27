@@ -17,7 +17,7 @@ double fm_discriminator::sample(std::complex<double> c) {
 
   return (delta_phase);
 }
-void fm_discriminator::process(const std::vector<std::std::complex<double>>& samples_in,
+void fm_discriminator::process(const std::vector<std::complex<double>>& samples_in,
                                std::vector<double>& samples_out)
 {
   size_t n = samples_in.size();
